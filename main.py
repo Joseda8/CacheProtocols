@@ -14,14 +14,14 @@ clk = multiprocessing.Value('i')
 #Funciones
 def start_clk(clk):
     while(True):
-        print("Writing", clk.value)
+        #print("Writing", clk.value)
         clk.value += 1
         time.sleep(1.5)
 
 def read_clk(clk):
     while(True):
         print("Read: ", clk.value)
-        time.sleep(1.5)
+        time.sleep(0.5)
 
 def read_test(proc):
     while(True):
@@ -42,8 +42,9 @@ if __name__ == '__main__':
     manager.start()
     bus = manager.Bus()
 
-    #processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
-    processors = [Processor(1)]
+    processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
+    #processors = [Processor(1)]
+    #processors = [Processor(1), Processor(2)]
 
     threads = [threading.Thread(target=start_clk, args=(clk,))]
 

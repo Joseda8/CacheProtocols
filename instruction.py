@@ -1,7 +1,7 @@
 class Instruction:
     def __init__(self, proc_id, inst, data):
         self.proc_id = proc_id
-        self.inst = inst
+        self.type = inst
         if(inst=="READ"):
             self.addr = data[0]
         elif(inst=="WRITE"):
