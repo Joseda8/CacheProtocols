@@ -1,8 +1,12 @@
-import processor
-import memory
+from processor import Processor
+from bus import Bus
+from multiprocessing import Process, Manager
+from multiprocessing.managers import BaseManager
+
 import time
 import threading
-import multiprocessing 
+import multiprocessing
+
 
 #Variables globales
 clk = multiprocessing.Value('i') 
@@ -10,7 +14,7 @@ clk = multiprocessing.Value('i')
 #Funciones
 def start_clk(clk):
     while(True):
-        print("Writing")
+        print("Writing", clk.value)
         clk.value += 1
         time.sleep(1.5)
 
@@ -19,22 +23,32 @@ def read_clk(clk):
         print("Read: ", clk.value)
         time.sleep(1.5)
 
+def read_test(proc):
+    while(True):
+        print(proc.inst)
+        time.sleep(0.5)
+
 
 
 ################################
 ########    MAIN    ############
 ################################
 
-#Instancias de los componentes
-memory = memory.Memory()
-processor_1 = processor.Processor(1)
-processor_2 = processor.Processor(2)
-processor_3 = processor.Processor(3)
-processor_4 = processor.Processor(4)
+if __name__ == '__main__':
 
-x = processor_1.get_data(8)
-print(x)
+    #Instancias de los componentes
+    BaseManager.register('Bus', Bus)
+    manager = BaseManager()
+    manager.start()
+    bus = manager.Bus()
 
-threads = [threading.Thread(target=start_clk, args=(clk,)), threading.Thread(target=read_clk, args=(clk,))]
-[t.start() for t in threads]
-[t.join() for t in threads]
+    #processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
+    processors = [Processor(1)]
+
+    threads = [threading.Thread(target=start_clk, args=(clk,))]
+
+    for proc in processors:
+        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus)))
+
+    [t.start() for t in threads]
+    [t.join() for t in threads]
