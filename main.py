@@ -6,6 +6,7 @@ from multiprocessing.managers import BaseManager
 import time
 import threading
 import multiprocessing
+import sys
 
 
 #Variables globales
@@ -26,7 +27,7 @@ def read_clk(clk):
 def read_test(proc):
     while(True):
         print(proc.inst)
-        time.sleep(0.5)
+        time.sleep(1.0)
 
 
 
@@ -42,9 +43,9 @@ if __name__ == '__main__':
     manager.start()
     bus = manager.Bus()
 
-    processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
+    #processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
     #processors = [Processor(1)]
-    #processors = [Processor(1), Processor(2)]
+    processors = [Processor(1), Processor(2)]
 
     threads = [threading.Thread(target=start_clk, args=(clk,))]
 

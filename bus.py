@@ -7,7 +7,10 @@ class Bus:
         self.inst = None
 
     def get_busy(self):
-        return self.busy
+        is_busy = self.busy
+        if(not is_busy):
+            self.busy = True
+        return is_busy
     
     def set_busy(self, status):
         self.busy = status
@@ -21,20 +24,8 @@ class Bus:
         return True
 
     def read_mem(self, address):
-        if(not self.memory.busy):
-            self.memory.busy = True
-            return self.memory.get_data(address)
-        else:
-            return False
-            
-    def write_mem(self, address, data):
-        if(not self.memory.busy):
-            self.memory.busy = True
-            self.memory.set_data(address, data)
-            return True
-        else:
-            return False
+        return self.memory.get_data(address)
 
-    def leave_mem(self):
-        self.memory.busy = False
+    def write_mem(self, address, data):
+        self.memory.set_data(address, data)
         return True
