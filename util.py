@@ -1,6 +1,7 @@
 import scipy.stats as ss
 import numpy as np
 import random
+import time
 
 def get_inst():
     rand_prob = random.random()
@@ -20,3 +21,8 @@ def get_inst():
 
     return inst
     
+def get_randint(lowest, highest):
+    return random.randint(lowest, highest)
+
+def sleep(seconds):
+    time.sleep(seconds)

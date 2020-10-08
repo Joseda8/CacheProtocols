@@ -7,9 +7,10 @@ class Bus:
         self.inst = None
 
     def get_busy(self):
-        is_busy = self.busy
-        if(not is_busy):
+        is_busy = True
+        if(not self.busy):
             self.busy = True
+            is_busy = False
         return is_busy
     
     def set_busy(self, status):

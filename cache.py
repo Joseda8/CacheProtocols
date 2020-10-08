@@ -22,7 +22,7 @@ class Cache:
     elif(address==line_1.tag):
       return line_1.data
     else:
-      return False
+      return None
 
   def write(self, address, data):
     cache_set = address%2
