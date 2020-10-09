@@ -5,7 +5,7 @@ import instruction
 import util
 import multiprocessing
 
-NUM_PROC = 2
+NUM_PROC = 4
 
 class Processor:
     def __init__(self, id):
@@ -80,6 +80,7 @@ class Processor:
     
     def wait_write(self, msg):
         proc = []
+        clk = 0
         while(True):
             new_msg = self.get_msg(msg)
             status = new_msg["status"]
@@ -89,6 +90,9 @@ class Processor:
                     proc.append(ans)
                 if(len(proc)==NUM_PROC-1):
                     break
+            clk += 1
+            if(clk==10000):
+                break
         self.clear_msg(msg)
     
     def print_inst(self):
@@ -109,21 +113,6 @@ class Processor:
                 addr = util.get_randint(0, 15)
                 data = util.get_randint(0, 65535)
                 self.inst.append(instruction.Instruction(self.id, "WRITE", [addr, data]))
-        
-        new_inst = []
-        if(self.id==1):
-            new_inst.append(instruction.Instruction(self.id, "READ", [0]))
-            #new_inst.append(instruction.Instruction(self.id, "WRITE", [6, 8]))
-            new_inst.append(instruction.Instruction(self.id, "WRITE", [4, 8]))
-            new_inst.append(instruction.Instruction(self.id, "WRITE", [2, 8]))
-            new_inst.append(instruction.Instruction(self.id, "WRITE", [0, 8]))
-            util.sleep(1)
-        elif(self.id==2):
-            #new_inst.append(instruction.Instruction(self.id, "READ", [0]))
-            new_inst.append(instruction.Instruction(self.id, "READ", [0]))
-
-        self.inst = new_inst
-
 
     def inst_run(self, clk, bus, msg):
         inst_to_run = self.inst[-1]
@@ -132,7 +121,7 @@ class Processor:
         if(inst_type=="READ" and not bus.get_busy()):
             data = self.read_cache(inst_to_run.addr)
             if(data is not None):
-                print(f"CYCLE {start_clk}, PROC: {self.id}, READ MY CACHE:", inst_to_run.addr, data.data)
+                #print(f"CYCLE {start_clk}, PROC: {self.id}, READ MY CACHE:", inst_to_run.addr, data.data)
                 self.inst.pop()
             else:
                 bus.set_inst(inst_to_run)
@@ -140,12 +129,12 @@ class Processor:
                 data = self.wait_ans(msg)
                 if(data["ans"] is not None):
                     data = data["ans"]
-                    print(f"CYCLE {start_clk}, PROC: {self.id}, READ CACHE:", inst_to_run.addr, data)
+                    #print(f"CYCLE {start_clk}, PROC: {self.id}, READ CACHE:", inst_to_run.addr, data)
                     self.write_cache(inst_to_run.addr, data)
                     self.set_state(inst_to_run.addr, "S")
                 else:
                     data = bus.read_mem(inst_to_run.addr)
-                    print(f"CYCLE {start_clk}, PROC: {self.id}, READ MEM:", inst_to_run.addr, data)
+                    #print(f"CYCLE {start_clk}, PROC: {self.id}, READ MEM:", inst_to_run.addr, data)
                     while(clk.value-start_clk<=1):
                         pass
                     self.write_cache(inst_to_run.addr, data)
@@ -158,6 +147,8 @@ class Processor:
             bus.write_mem(inst_to_run.addr, inst_to_run.data)
             data = self.read_cache(inst_to_run.addr)
             if(data is not None):
+                self.insert_msg(msg, inst_to_run, None, None)
+                self.wait_write(msg)
                 self.write_cache(inst_to_run.addr, inst_to_run.data)
             else:
                 read_inst = instruction.Instruction(self.id, "READ", [inst_to_run.addr])
@@ -173,16 +164,15 @@ class Processor:
                     self.wait_write(msg)
                     self.write_cache(inst_to_run.addr, inst_to_run.data)                    
                     self.set_state(inst_to_run.addr, "E")
-                
-            
-            print(f"CYCLE {start_clk}, PROC: {self.id}, WRITE", inst_to_run.addr, inst_to_run.data)
+
+            #print(f"CYCLE {start_clk}, PROC: {self.id}, WRITE", inst_to_run.addr, inst_to_run.data)
             while(clk.value-start_clk<=2):
                 pass
             self.inst.pop()
             bus.set_inst(None)
             bus.set_busy(False)
         elif(inst_type=="CALC"):
-            print(f"CYCLE {clk.value}, PROC: {self.id}, CALC")
+            #print(f"CYCLE {clk.value}, PROC: {self.id}, CALC")
             self.inst.pop()
 
     def cpu_run(self, clk, bus, msg):
@@ -192,14 +182,14 @@ class Processor:
             if(clk_bef != new_clk):
                 try:
                     x_lines = self.get_lines()
-                    print(f"\nCYCLE {new_clk}, PROC: {self.id}, STATE: {x_lines[0].state} {x_lines[1].state} \nDATA: {x_lines[0].tag}-{x_lines[0].data} {x_lines[1].tag}-{x_lines[1].data}\n")
+                    #print(f"\nCYCLE {new_clk}, PROC: {self.id}, STATE: {x_lines[0].state} {x_lines[1].state} \nDATA: {x_lines[0].tag}-{x_lines[0].data} {x_lines[1].tag}-{x_lines[1].data}\n")
                     pass
                 except:
-                    print(f"CYCLE {new_clk}, PROC: {self.id}, STATE: None")
+                    #print(f"CYCLE {new_clk}, PROC: {self.id}, STATE: None")
                     pass
                 if(len(self.inst)==0):
                     self.new_inst()
-                    self.print_inst()
+                    #self.print_inst()
                 else:
                     self.inst_run(clk, bus, msg)
 

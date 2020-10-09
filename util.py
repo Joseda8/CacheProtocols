@@ -2,6 +2,8 @@ import scipy.stats as ss
 import numpy as np
 import random
 import time
+from queue import Queue 
+
 
 def get_inst():
     rand_prob = random.random()
@@ -26,3 +28,19 @@ def get_randint(lowest, highest):
 
 def sleep(seconds):
     time.sleep(seconds)
+
+
+def clear_msg(msg):
+    while(not msg.empty()):
+        msg.get()
+        msg.task_done()
+
+def insert_msg(msg, req, ans, status):
+    clear_msg(msg)
+    msg.put({"req": req, "ans": ans, "status": status})
+
+def get_msg(msg):
+    new_msg = msg.get()
+    msg.task_done()
+    insert_msg(msg, new_msg["req"], new_msg["ans"], new_msg["status"])
+    return new_msg
