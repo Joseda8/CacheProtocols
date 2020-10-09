@@ -65,3 +65,38 @@ class Cache:
         else:
           self.set_1.block_0.tag = address
           self.set_1.block_0.data = data
+
+
+  def set_state(self, address, state):
+    cache_set = address%2
+    line_0 = None
+    line_1 = None
+    if(cache_set==0):
+      line_0 = self.set_0.block_0
+      line_1 = self.set_0.block_1
+
+      if(line_0.tag==address or line_0.tag==None):
+        self.set_0.block_0.state = state
+      elif(line_1.tag==address or line_1.tag==None):
+        self.set_0.block_1.state = state
+      else:
+        line = bool(randint(0, 1))
+        if(line):
+          self.set_0.block_1.state = state
+        else:
+          self.set_0.block_0.state = state
+
+    elif(cache_set==1):
+      line_0 = self.set_1.block_0
+      line_1 = self.set_1.block_1
+
+      if(line_0.tag==address or line_0.tag==None):
+        self.set_1.block_0.state = state
+      elif(line_1.tag==address or line_1.tag==None):
+        self.set_1.block_1.state = state
+      else:
+        line = bool(randint(0, 1))
+        if(line):
+          self.set_1.block_1.state = state
+        else:
+          self.set_1.block_0.state = state

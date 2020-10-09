@@ -84,7 +84,7 @@ class Processor:
             new_msg = self.get_msg(msg)
             status = new_msg["status"]
             ans = new_msg["ans"]
-            if(status and new_msg["req"].type == "WRITE"):
+            if(status):
                 if(ans not in proc):
                     proc.append(ans)
                 if(len(proc)==NUM_PROC-1):
@@ -103,84 +103,83 @@ class Processor:
             if(inst == 0):
                 self.inst.append(instruction.Instruction(self.id, "CALC", None))
             elif(inst == 1):
-                addr = util.get_randint(0, 15)
+                addr = util.get_randint(0, 1)
                 self.inst.append(instruction.Instruction(self.id, "READ", [addr]))
             elif(inst == 2):
-                addr = util.get_randint(0, 15)
+                addr = util.get_randint(0, 4)
                 data = util.get_randint(0, 65535)
                 self.inst.append(instruction.Instruction(self.id, "WRITE", [addr, data]))
-        
+
         new_inst = []
         if(self.id==1):
             new_inst.append(instruction.Instruction(self.id, "READ", [0]))
-            #new_inst.append(instruction.Instruction(self.id, "WRITE", [6, 8]))
-            new_inst.append(instruction.Instruction(self.id, "WRITE", [4, 8]))
-            new_inst.append(instruction.Instruction(self.id, "WRITE", [2, 8]))
             new_inst.append(instruction.Instruction(self.id, "WRITE", [0, 8]))
-            util.sleep(1)
+            new_inst.append(instruction.Instruction(self.id, "WRITE", [2, 8]))
+            new_inst.append(instruction.Instruction(self.id, "WRITE", [4, 8]))
+            new_inst.append(instruction.Instruction(self.id, "WRITE", [6, 8]))
+            new_inst.append(instruction.Instruction(self.id, "READ", [0]))
         elif(self.id==2):
-            #new_inst.append(instruction.Instruction(self.id, "READ", [0]))
+            new_inst.append(instruction.Instruction(self.id, "READ", [0]))
             new_inst.append(instruction.Instruction(self.id, "READ", [0]))
 
         self.inst = new_inst
-
+            
 
     def inst_run(self, clk, bus, msg):
         inst_to_run = self.inst[-1]
         inst_type = inst_to_run.type
         start_clk = clk.value
-        if(inst_type=="READ" and not bus.get_busy()):
+        if(inst_type=="READ"):
             data = self.read_cache(inst_to_run.addr)
-            if(data is not None):
+            if(data is not None and (not bus.get_busy()) ):
                 print(f"CYCLE {start_clk}, PROC: {self.id}, READ MY CACHE:", inst_to_run.addr, data.data)
+                self.write_cache(inst_to_run.addr, data.data)
                 self.inst.pop()
-            else:
+                bus.set_inst(None)
+                bus.set_busy(False)
+            elif(not bus.get_busy()):
                 bus.set_inst(inst_to_run)
                 self.insert_msg(msg, inst_to_run, None, None)
                 data = self.wait_ans(msg)
                 if(data["ans"] is not None):
                     data = data["ans"]
                     print(f"CYCLE {start_clk}, PROC: {self.id}, READ CACHE:", inst_to_run.addr, data)
-                    self.write_cache(inst_to_run.addr, data)
                     self.set_state(inst_to_run.addr, "S")
+                    self.write_cache(inst_to_run.addr, data)
                 else:
                     data = bus.read_mem(inst_to_run.addr)
                     print(f"CYCLE {start_clk}, PROC: {self.id}, READ MEM:", inst_to_run.addr, data)
-                    while(clk.value-start_clk<=1):
-                        pass
                     self.write_cache(inst_to_run.addr, data)
                     self.set_state(inst_to_run.addr, "E")
+                    while(clk.value-start_clk<=1):
+                        pass
                 self.inst.pop()
-            bus.set_inst(None)
-            bus.set_busy(False)
-        elif(inst_type=="WRITE" and not bus.get_busy()):
-            bus.set_inst(inst_to_run)
-            bus.write_mem(inst_to_run.addr, inst_to_run.data)
-            data = self.read_cache(inst_to_run.addr)
-            if(data is not None):
+                bus.set_inst(None)
+                bus.set_busy(False)
+        elif(inst_type=="WRITE"):
+            if(not bus.get_busy()):
+                bus.set_inst(inst_to_run)
+                bus.write_mem(inst_to_run.addr, inst_to_run.data)
+                print(f"CYCLE {start_clk}, PROC: {self.id}, WRITE", inst_to_run.addr, inst_to_run.data)
+                line = self.read_cache(inst_to_run.addr)
                 self.write_cache(inst_to_run.addr, inst_to_run.data)
-            else:
-                read_inst = instruction.Instruction(self.id, "READ", [inst_to_run.addr])
-                self.insert_msg(msg, read_inst, None, None)
-                data = self.wait_ans(msg)
-                if(data["ans"] is not None):
-                    self.insert_msg(msg, inst_to_run, None, None)
-                    self.wait_write(msg)
-                    self.write_cache(inst_to_run.addr, inst_to_run.data)
-                    self.set_state(inst_to_run.addr, "S")
-                else:
-                    self.insert_msg(msg, inst_to_run, None, None)
-                    self.wait_write(msg)
-                    self.write_cache(inst_to_run.addr, inst_to_run.data)                    
-                    self.set_state(inst_to_run.addr, "E")
-                
-            
-            print(f"CYCLE {start_clk}, PROC: {self.id}, WRITE", inst_to_run.addr, inst_to_run.data)
-            while(clk.value-start_clk<=2):
-                pass
-            self.inst.pop()
-            bus.set_inst(None)
-            bus.set_busy(False)
+                if(line is None):
+                    read_inst = instruction.Instruction(self.id, "READ", [inst_to_run.addr])
+                    self.insert_msg(msg, read_inst, None, None)
+                    print("ENTER")
+                    data = self.wait_ans(msg)
+                    print("OUT", data)
+                    if(data["ans"] is None):
+                        self.set_state(inst_to_run.addr, "E")
+                    else:
+                        self.set_state(inst_to_run.addr, "S")
+                self.insert_msg(msg, inst_to_run, None, None)
+                self.wait_write(msg)
+                while(clk.value-start_clk<=2):
+                    pass
+                self.inst.pop()
+                bus.set_inst(None)
+                bus.set_busy(False)
         elif(inst_type=="CALC"):
             print(f"CYCLE {clk.value}, PROC: {self.id}, CALC")
             self.inst.pop()
@@ -217,15 +216,26 @@ class Processor:
                         line = self.read_cache(inst.addr)
                         if(line is None):
                             self.insert_msg(msg, inst, self.id, False)
-                        elif(line.state=="E" or line.state=="O"):
-                            self.set_state(line.tag, "O")
+                        elif(line.state == "O"):
                             self.insert_msg(msg, inst, line.data, True)
                         else:
-                            self.set_state(line.tag, "O")
+                            print("OWNED", self.id, inst.addr, inst.proc_id)
+                            self.set_state(inst.addr, "O")
                             self.insert_msg(msg, inst, line.data, True)
                     elif(new_msg["req"].type=="WRITE"):
                         if(self.read_cache(inst.addr) is not None):
                             self.write_cache(inst.addr, inst.data)
+                        else:
+                            lines = self.get_lines()
+                            for line in lines:
+                                if(line.tag is not None):
+                                    read_inst = instruction.Instruction(self.id, "READ", [line.tag])
+                                    self.insert_msg(msg, read_inst, None, None)
+                                    data = self.wait_ans(msg)
+                                    print("CLEANING", self.id, data["ans"], data["req"].proc_id, data["req"].addr)
+                                    if(data["ans"] is None):
+                                        self.set_state(line.tag, "E")
+
                         self.insert_msg(msg, inst, self.id, True)
 
             clk_bef = new_clk

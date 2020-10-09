@@ -1,5 +1,6 @@
 from processor import Processor
 from bus import Bus
+from cache import Cache
 from multiprocessing import Process, Manager
 from multiprocessing.managers import BaseManager
 from queue import Queue 
@@ -40,11 +41,14 @@ if __name__ == '__main__':
 
     #Instancias de los componentes
     BaseManager.register('Bus', Bus)
-    manager = BaseManager()
-    manager.start()
-    bus = manager.Bus()
+    bus_manager = BaseManager()
+    bus_manager.start()
+    bus = bus_manager.Bus()
 
     msg = Queue() 
+
+    #caches = [Cache(1), Cache(2), Cache(3), Cache(4)]
+    #caches = [Cache(1), Cache(2)]
 
     #processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
     #processors = [Processor(1)]
