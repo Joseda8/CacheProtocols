@@ -23,7 +23,7 @@ def start_clk(clk):
 def read_clk(clk):
     while(True):
         print("Read: ", clk.value)
-        time.sleep(0.5)
+        time.sleep(1.5)
 
 def read_test(proc):
     while(True):
@@ -46,9 +46,9 @@ if __name__ == '__main__':
 
     msg = Queue() 
 
-    processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
+    #processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
     #processors = [Processor(1)]
-    #processors = [Processor(1), Processor(2)]
+    processors = [Processor(1), Processor(2)]
 
     threads = [threading.Thread(target=start_clk, args=(clk,))]
 

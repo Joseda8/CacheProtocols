@@ -5,6 +5,8 @@ import instruction
 import util
 import multiprocessing
 
+NUM_PROC = 2
+
 class Processor:
     def __init__(self, id):
         self.id = id
@@ -54,11 +56,24 @@ class Processor:
             elif(status==False):
                 if(ans not in proc):
                     proc.append(ans)
-            if(len(proc)==3):
+            if(len(proc)==NUM_PROC-1):
                 new_msg["ans"] = None
                 break
         self.clear_msg(msg)
         return new_msg
+    
+    def wait_write(self, msg):
+        proc = []
+        while(True):
+            new_msg = self.get_msg(msg)
+            status = new_msg["status"]
+            ans = new_msg["ans"]
+            if(status):
+                if(ans not in proc):
+                    proc.append(ans)
+                if(len(proc)==NUM_PROC-1):
+                    break
+        self.clear_msg(msg)
     
     def print_inst(self):
         a = []
@@ -76,9 +91,9 @@ class Processor:
                 self.inst.append(instruction.Instruction(self.id, "READ", [addr]))
             elif(inst == 2):
                 addr = util.get_randint(0, 15)
-                data = util.get_randint(0, 65536)
+                data = util.get_randint(0, 65535)
                 self.inst.append(instruction.Instruction(self.id, "WRITE", [addr, data]))
-        #self.inst = [instruction.Instruction(self.id, "READ", [9]), instruction.Instruction(self.id, "WRITE", [8, 12]), instruction.Instruction(self.id, "WRITE", [9, 200]), instruction.Instruction(self.id, "READ", [9]), instruction.Instruction(self.id, "READ", [9])]
+        self.inst = [instruction.Instruction(self.id, "READ", [9]), instruction.Instruction(self.id, "WRITE", [8, 12]), instruction.Instruction(self.id, "WRITE", [9, 200]), instruction.Instruction(self.id, "READ", [9]), instruction.Instruction(self.id, "READ", [9])]
 
     def inst_run(self, clk, bus, msg):
         inst_to_run = self.inst[-1]
@@ -87,8 +102,8 @@ class Processor:
         if(inst_type=="READ"):
             data = self.read_cache(inst_to_run.addr)
             if(data is not None):
-                print(f"CYCLE {start_clk}, PROC: {self.id}, READ MY CACHE:", inst_to_run.addr, data)
-                self.write_cache(inst_to_run.addr, data)
+                print(f"CYCLE {start_clk}, PROC: {self.id}, READ MY CACHE:", inst_to_run.addr, data.data)
+                self.write_cache(inst_to_run.addr, data.data)
                 self.inst.pop()
             elif(not bus.get_busy()):
                 bus.set_inst(inst_to_run)
@@ -114,6 +129,8 @@ class Processor:
                 while(clk.value-start_clk<=2):
                     pass
                 self.write_cache(inst_to_run.addr, inst_to_run.data)
+                self.insert_msg(msg, inst_to_run, None, None)
+                self.wait_write(msg)
                 self.inst.pop()
                 bus.set_inst(None)
                 bus.set_busy(False)
@@ -143,11 +160,14 @@ class Processor:
                 inst = new_msg["req"]
                 if(inst.proc_id != self.id):
                     if(new_msg["req"].type=="READ"):
-                        data = self.read_cache(inst.addr)
-                        if(data is None):
+                        line = self.read_cache(inst.addr)
+                        if(line is None):
                             self.insert_msg(msg, inst, self.id, False)
                         else:
-                            self.insert_msg(msg, inst, data, True)
+                            self.insert_msg(msg, inst, line.data, True)
+                    elif(new_msg["req"].type=="WRITE"):
+                        self.write_cache(inst.addr, inst.data)
+                        self.insert_msg(msg, inst, self.id, True)
 
             clk_bef = new_clk
             

@@ -18,9 +18,9 @@ class Cache:
       line_1 = self.set_1.block_1
 
     if(address==line_0.tag):
-      return line_0.data
+      return line_0
     elif(address==line_1.tag):
-      return line_1.data
+      return line_1
     else:
       return None
 
