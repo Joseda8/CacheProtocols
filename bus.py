@@ -1,28 +1,39 @@
 import memory 
+import multiprocessing
 
 class Bus:
     def __init__(self):
         self.memory = memory.Memory()
-        self.busy = False
+        self.busy = multiprocessing.Value('i', False)
+        self.is_inst_busy = multiprocessing.Value('i', False)
         self.inst = None
 
     def get_busy(self):
         is_busy = True
-        if(not self.busy):
-            self.busy = True
+        if(not self.busy.value):
+            self.busy.value = True
             is_busy = False
         return is_busy
     
     def set_busy(self, status):
-        self.busy = status
+        self.busy.value = status
         return True
 
-    def get_inst(self):
-        return self.inst
-    
-    def set_inst(self, inst):
-        self.inst = inst
-        return True
+    def get_inst(self):    
+        while(True):
+            if(not self.is_inst_busy.value):
+                self.is_inst_busy.value = True
+                data = self.inst
+                self.is_inst_busy.value = False
+                return data
+
+    def set_inst(self, new_inst):    
+        while(True):
+            if(not self.is_inst_busy.value):
+                self.is_inst_busy.value = True
+                self.inst = new_inst
+                self.is_inst_busy.value = False
+                break
 
     def read_mem(self, address):
         return self.memory.get_data(address)
