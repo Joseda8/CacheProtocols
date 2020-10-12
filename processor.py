@@ -1,9 +1,6 @@
 from queue import Queue 
 from multiprocessing import Process, Manager
 from multiprocessing.managers import BaseManager
-from tkinter import *
-from tkinter import font
-from tkinter import messagebox
 
 import cache
 import instruction
@@ -103,7 +100,6 @@ class Processor:
     
     def wait_write(self, msg):
         proc = []
-        clk = 0
         while(True):
             new_msg = self.get_msg(msg)
             status = new_msg["status"]
@@ -213,9 +209,9 @@ class Processor:
             print(f"CYCLE {clk.value}, PROC: {self.id.value}, CALC")
             self.inst.pop()
 
-    def cpu_run(self, clk, bus, msg):
+    def cpu_run(self, clk, bus, msg, kill):
         clk_bef = 0 
-        while(True):
+        while(not kill.value):
             new_clk = clk.value
             if(clk_bef != new_clk):
                 """
@@ -235,9 +231,9 @@ class Processor:
 
             clk_bef = new_clk
 
-    def snoopy(self, clk, bus, msg, processors):
+    def snoopy(self, clk, bus, msg, processors, kill):
         clk_bef = 0 
-        while(True):
+        while(not kill.value):
             new_clk = clk.value
             if(clk_bef != new_clk):
                 new_msg = self.get_msg(msg)
@@ -271,5 +267,4 @@ class Processor:
                                         self.set_state(line.tag, "E")
 
             clk_bef = new_clk
-            
             
