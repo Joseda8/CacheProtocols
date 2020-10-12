@@ -7,3 +7,11 @@ class Instruction:
         elif(inst=="WRITE"):
             self.addr = data[0]
             self.data = data[1]
+
+    def __str__(self):
+        if(self.type=="CALC"):
+            return "CALC"
+        elif(self.type=="READ"):
+            return f"R: {hex(self.addr)}"
+        else:
+            return f"W: {hex(self.addr)}, {bin(self.data)[2:]}"

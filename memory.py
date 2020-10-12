@@ -8,4 +8,8 @@ class Memory:
     def set_data(self, address, data):
         self.memory[address] = data
 
+    def get_mem(self):
+        mem = self.memory
+        return mem
+
 

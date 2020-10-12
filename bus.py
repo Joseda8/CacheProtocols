@@ -41,3 +41,13 @@ class Bus:
     def write_mem(self, address, data):
         self.memory.set_data(address, data)
         return True
+
+    def get_mem(self):
+        mem = None
+        while(True):
+            if(not self.busy.value):
+                self.busy.value = True
+                mem = self.memory.get_mem()
+                self.busy.value = False
+                break
+        return mem

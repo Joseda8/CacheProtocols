@@ -13,7 +13,7 @@ class Processor:
     def __init__(self, id):
         self.id = multiprocessing.Value('i', id)
         self.is_cache_busy = multiprocessing.Value('i', False)
-        self.cache = cache.Cache()
+        self.cache = cache.Cache(id)
         self.inst = []
         self.is_inst_busy = multiprocessing.Value('i', False)
         self.inst_exe = None
@@ -134,7 +134,6 @@ class Processor:
                 addr = util.get_randint(0, 2)
                 data = util.get_randint(0, 65535)
                 self.inst.append(instruction.Instruction(self.id.value, "WRITE", [addr, data]))
-    """
         new_inst = []
         if(self.id.value==1):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
@@ -147,7 +146,6 @@ class Processor:
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
 
         self.inst = new_inst
-    """
 
     def inst_run(self, clk, bus, msg):
         inst_to_run = self.inst[-1]

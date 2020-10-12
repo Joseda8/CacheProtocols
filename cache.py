@@ -2,9 +2,9 @@ import cache_set
 from random import randint
 
 class Cache:
-  def __init__(self):
-    self.set_0 = cache_set.Set()
-    self.set_1 = cache_set.Set()
+  def __init__(self, id):
+    self.set_0 = cache_set.Set(id, 0)
+    self.set_1 = cache_set.Set(id, 1)
 
   def read(self, address):
     cache_set = address%2
