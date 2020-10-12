@@ -1,9 +1,6 @@
 from queue import Queue 
 from multiprocessing import Process, Manager
 from multiprocessing.managers import BaseManager
-from tkinter import *
-from tkinter import font
-from tkinter import messagebox
 
 import cache
 import instruction
@@ -113,11 +110,9 @@ class Processor:
                     proc.append(ans)
                 if(len(proc)==NUM_PROC-1):
                     break
-            """
             clk += 1
             if(clk==10000):
                 break
-            """
         self.clear_msg(msg)
     
     def print_inst(self):
@@ -138,7 +133,7 @@ class Processor:
                 addr = util.get_randint(0, 2)
                 data = util.get_randint(0, 65535)
                 self.inst.append(instruction.Instruction(self.id.value, "WRITE", [addr, data]))
-    """
+
         new_inst = []
         if(self.id.value==1):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
@@ -151,7 +146,6 @@ class Processor:
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
 
         self.inst = new_inst
-    """
 
     def inst_run(self, clk, bus, msg):
         inst_to_run = self.inst[-1]
@@ -195,13 +189,15 @@ class Processor:
                 self.insert_msg(msg, read_inst, None, None)
                 data = self.wait_ans(msg)
                 if(data["ans"] is not None):
+                    self.insert_msg(msg, inst_to_run, None, None)
+                    self.wait_write(msg)
                     self.write_cache(inst_to_run.addr, inst_to_run.data)
                     self.set_state(inst_to_run.addr, "S")
                 else:
+                    self.insert_msg(msg, inst_to_run, None, None)
+                    self.wait_write(msg)
                     self.write_cache(inst_to_run.addr, inst_to_run.data)                    
                     self.set_state(inst_to_run.addr, "E")
-                self.insert_msg(msg, inst_to_run, None, None)
-                self.wait_write(msg)
 
             print(f"CYCLE {start_clk}, PROC: {self.id.value}, WRITE", inst_to_run.addr, inst_to_run.data)
             while(clk.value-start_clk<=2):
@@ -218,7 +214,6 @@ class Processor:
         while(True):
             new_clk = clk.value
             if(clk_bef != new_clk):
-                """
                 try:
                     x_lines = self.get_lines()
                     print(f"\nCYCLE {new_clk}, PROC: {self.id.value}, STATE: {x_lines[0].state} {x_lines[1].state} \nDATA: {x_lines[0].tag}-{x_lines[0].data} {x_lines[1].tag}-{x_lines[1].data}\n")
@@ -226,7 +221,6 @@ class Processor:
                 except:
                     print(f"CYCLE {new_clk}, PROC: {self.id.value}, STATE: None")
                     pass
-                """
                 if(len(self.inst)==0):
                     self.new_inst()
                     #self.print_inst()
@@ -234,6 +228,7 @@ class Processor:
                     self.inst_run(clk, bus, msg)
 
             clk_bef = new_clk
+
 
     def snoopy(self, clk, bus, msg, processors):
         clk_bef = 0 
@@ -254,10 +249,10 @@ class Processor:
                             self.set_state(line.tag, "O")
                             self.insert_msg(msg, inst, line.data, True)
                     elif(new_msg["req"].type=="WRITE"):
-                        self.insert_msg(msg, inst, self.id.value, True)
                         if(self.read_cache(inst.addr) is not None):
                             self.write_cache(inst.addr, inst.data)
-                        else:
+
+                            """
                             lines = self.get_lines()
                             for line in lines:
                                 if(line.tag is not None):
@@ -269,7 +264,9 @@ class Processor:
                                                 exclusive = False
                                     if(exclusive):
                                         self.set_state(line.tag, "E")
+                                        """
+
+                        self.insert_msg(msg, inst, self.id.value, True)
 
             clk_bef = new_clk
-            
             

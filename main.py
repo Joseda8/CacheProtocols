@@ -22,7 +22,6 @@ def start_clk(clk):
         clk.value += 1
         time.sleep(1.5)
 
-
 def reader(clk, bus, processors):
     clk_bef = 0 
     while(True):
@@ -60,12 +59,12 @@ if __name__ == '__main__':
     #processors = [Processor(1)]
     processors = [Processor(1), Processor(2)]
 
-    #threads = [threading.Thread(target=start_clk, args=(clk,)), threading.Thread(target=check_bus, args=(processors, msg, check_flag))]
     threads = [threading.Thread(target=start_clk, args=(clk,)), threading.Thread(target=reader, args=(clk, bus, processors))]
+    #threads = [threading.Thread(target=start_clk, args=(clk,))]
 
     for proc in processors:
         threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, msg)))
-        threads.append(threading.Thread(target=proc.snoopy, args=(clk, bus, msg)))
+        threads.append(threading.Thread(target=proc.snoopy, args=(clk, bus, msg, processors)))
 
     [t.start() for t in threads]
     #threads.append(msg)
