@@ -12,6 +12,6 @@ class Instruction:
         if(self.type=="CALC"):
             return "CALC"
         elif(self.type=="READ"):
-            return f"R: {hex(self.addr)}"
+            return f"R: {bin(self.addr)[2:]}"
         else:
-            return f"W: {hex(self.addr)}, {bin(self.data)[2:]}"
+            return f"W: {bin(self.addr)[2:]}, {hex(self.data)}"

@@ -7,7 +7,7 @@ import instruction
 import util
 import multiprocessing
 
-NUM_PROC = 2
+NUM_PROC = 4
 
 class Processor:
     def __init__(self, id):
@@ -140,9 +140,24 @@ class Processor:
             new_inst.append(instruction.Instruction(self.id.value, "WRITE", [0, 8]))
             new_inst.append(instruction.Instruction(self.id.value, "WRITE", [2, 8]))
             new_inst.append(instruction.Instruction(self.id.value, "WRITE", [4, 8]))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
         elif(self.id.value==2):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
+            new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
+        elif(self.id.value==3):
+            new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
+            new_inst.append(instruction.Instruction(self.id.value, "READ", [1]))
+        elif(self.id.value==4):
+            new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [1, 8]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [2, 8]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [4, 8]))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
 
         self.inst = new_inst
@@ -178,8 +193,11 @@ class Processor:
             bus.set_busy(False)
         elif(inst_type=="WRITE" and not bus.get_busy()):
             bus.set_inst(inst_to_run)
-            bus.write_mem(inst_to_run.addr, inst_to_run.data)
+            #bus.write_mem(inst_to_run.addr, inst_to_run.data)
             data = self.read_cache(inst_to_run.addr)
+            print(f"CYCLE {start_clk}, PROC: {self.id.value}, WRITE", inst_to_run.addr, inst_to_run.data)
+            while(clk.value-start_clk<=2):
+                pass
             if(data is not None):
                 self.insert_msg(msg, inst_to_run, None, None)
                 self.wait_write(msg)
@@ -196,10 +214,7 @@ class Processor:
                     self.set_state(inst_to_run.addr, "E")
                 self.insert_msg(msg, inst_to_run, None, None)
                 self.wait_write(msg)
-
-            print(f"CYCLE {start_clk}, PROC: {self.id.value}, WRITE", inst_to_run.addr, inst_to_run.data)
-            while(clk.value-start_clk<=2):
-                pass
+            bus.write_mem(inst_to_run.addr, inst_to_run.data)
             self.inst.pop()
             bus.set_inst(None)
             bus.set_busy(False)
@@ -245,7 +260,14 @@ class Processor:
                             self.set_state(line.tag, "O")
                             self.insert_msg(msg, inst, line.data, True)
                         else:
-                            self.set_state(line.tag, "O")
+                            exclusive = True
+                            for proc in processors:
+                                if(self.id.value != proc.id.value):
+                                    data = proc.read_cache(line.tag)
+                                    if(data is not None):
+                                        exclusive = False
+                            if(exclusive):
+                                self.set_state(line.tag, "O")
                             self.insert_msg(msg, inst, line.data, True)
                     elif(new_msg["req"].type=="WRITE"):
                         self.insert_msg(msg, inst, self.id.value, True)

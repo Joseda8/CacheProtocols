@@ -263,7 +263,7 @@ def create_gui():
     tag.place(x=422.5, y=430, anchor='center')
     data = Label(canvas, text="", font=Helvfont, fg='black', background='gray90')
     data.place(x=522.5, y=430, anchor='center')
-    tags["410"] = (state, tag, data)
+    tags["411"] = (state, tag, data)
 
     canvas.create_rectangle(340, 450, 585, 490, fill="lightyellow", outline="black")
     canvas.create_rectangle(340, 450, 385, 490, fill="lightyellow", outline="black")
