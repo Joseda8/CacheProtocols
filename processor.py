@@ -96,7 +96,7 @@ class Processor:
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
             new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
             new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
-            new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
+            new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
         elif(self.id.value==3):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
             new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
@@ -131,22 +131,37 @@ class Processor:
                     break
         return data
 
+
+    def search_shared_data(self, processors, proc_id, addr):
+        result = []
+        for proc in processors:
+            if(proc.id.value != self.id.value != proc_id):
+                data = proc.read_cache(addr)
+                if(data is not None):
+                    result.append(proc.id.value)
+
+        if(len(result)==1):
+            processors[result[0]].set_state(addr, "O")
+        return len(result)
+
     def write_data(self, processors, addr, data):
         for proc in processors:
-            if(proc.read_cache(addr) is not None):
-                proc.write_cache(addr, data)
-            else:
-                lines = proc.get_lines()
-                for line in lines:
-                    if(line.tag is not None):
-                        exclusive = True
-                        for proc_2 in processors:
-                            if(proc.id.value != proc_2.id.value):
-                                test_data = proc_2.read_cache(line.tag)
-                                if(test_data is not None):
-                                    exclusive = False
-                        if(exclusive):
-                            proc_2.set_state(line.tag, "E")
+            if(proc.id.value != self.id.value):
+                if(proc.read_cache(addr) is not None):
+                    proc.write_cache(addr, data)
+                else:
+                    lines = proc.get_lines()
+                    for line in lines:
+                        if(line.tag is not None):
+                            exclusive = True
+                            for proc_2 in processors:
+                                if(proc_2.id.value != proc.id.value):
+                                    test_data = proc_2.read_cache(line.tag)
+                                    if(test_data is not None):
+                                        exclusive = False
+                                        
+                            if(exclusive):
+                                proc.set_state(line.tag, "E")
 
     def inst_run(self, clk, bus, msg, data_found, processors):
         inst_to_run = self.inst[-1]
@@ -183,17 +198,18 @@ class Processor:
             while(clk.value-start_clk<=2):
                 pass
             if(data is not None):
-                self.write_data(processors, inst_to_run.addr, inst_to_run.data)
                 self.write_cache(inst_to_run.addr, inst_to_run.data)
+                self.write_data(processors, inst_to_run.addr, inst_to_run.data)
             else:
                 data = self.search_data(processors, inst_to_run.addr)
                 if(data is not None):
                     self.write_cache(inst_to_run.addr, inst_to_run.data)
-                    self.write_data(processors, inst_to_run.addr, inst_to_run.data)
                     self.set_state(inst_to_run.addr, "S")
+                    self.write_data(processors, inst_to_run.addr, inst_to_run.data)
                 else:
-                    self.write_cache(inst_to_run.addr, inst_to_run.data)                    
+                    self.write_cache(inst_to_run.addr, inst_to_run.data) 
                     self.set_state(inst_to_run.addr, "E")
+                    self.write_data(processors, inst_to_run.addr, inst_to_run.data)
             bus.write_mem(inst_to_run.addr, inst_to_run.data)
             self.inst.pop()
             bus.set_inst(None)

@@ -33,7 +33,7 @@ def start_clk(clk, kill):
         if(mode=="Ciclos"):
             i = 1
             while(not pause.value):
-                if(i==steps):
+                if(i>=steps):
                     pause_btn.configure(text="Play")
                     pause.value = True
                 i += 1
