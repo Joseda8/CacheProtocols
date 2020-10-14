@@ -20,20 +20,11 @@ class Bus:
         return True
 
     def get_inst(self):    
-        while(True):
-            if(not self.is_inst_busy.value):
-                self.is_inst_busy.value = True
-                data = self.inst
-                self.is_inst_busy.value = False
-                return data
+        data = self.inst
+        return data
 
     def set_inst(self, new_inst):    
-        while(True):
-            if(not self.is_inst_busy.value):
-                self.is_inst_busy.value = True
-                self.inst = new_inst
-                self.is_inst_busy.value = False
-                break
+        self.inst = new_inst
 
     def read_mem(self, address):
         return self.memory.get_data(address)
@@ -43,11 +34,5 @@ class Bus:
         return True
 
     def get_mem(self):
-        mem = None
-        while(True):
-            if(not self.busy.value):
-                self.busy.value = True
-                mem = self.memory.get_mem()
-                self.busy.value = False
-                break
+        mem = self.memory.get_mem()
         return mem

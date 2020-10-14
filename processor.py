@@ -66,56 +66,6 @@ class Processor:
                 self.is_cache_busy.value = False
                 break
 
-    def clear_msg(self, msg):
-        while(not msg.empty()):
-            msg.get()
-            msg.task_done()
-
-    def insert_msg(self, msg, req, ans, status):
-        self.clear_msg(msg)
-        msg.put({"req": req, "ans": ans, "status": status})
-
-    def get_msg(self, msg):
-        new_msg = msg.get()
-        msg.task_done()
-        self.insert_msg(msg, new_msg["req"], new_msg["ans"], new_msg["status"])
-        return new_msg
-
-    def wait_ans(self, msg):
-        proc = []
-        while(True):
-            new_msg = self.get_msg(msg)
-            status = new_msg["status"]
-            ans = new_msg["ans"]
-            if(status):
-                break
-            elif(status==False):
-                if(ans not in proc):
-                    proc.append(ans)
-            if(len(proc)==NUM_PROC-1):
-                new_msg["ans"] = None
-                break
-        self.clear_msg(msg)
-        return new_msg
-    
-    def wait_write(self, msg):
-        proc = []
-        while(True):
-            new_msg = self.get_msg(msg)
-            status = new_msg["status"]
-            ans = new_msg["ans"]
-            if(status and new_msg["req"].type == "WRITE"):
-                if(ans not in proc):
-                    proc.append(ans)
-                if(len(proc)==NUM_PROC-1):
-                    break
-            """
-            clk += 1
-            if(clk==10000):
-                break
-            """
-        self.clear_msg(msg)
-    
     def print_inst(self):
         a = []
         for ins in self.inst:
@@ -162,7 +112,43 @@ class Processor:
 
         self.inst = new_inst
 
-    def inst_run(self, clk, bus, msg, data_found):
+    def search_data(self, processors, addr):
+        data = None
+        for proc in processors:
+            if(self.id.value != proc.id.value):
+                data = proc.read_cache(addr)
+                if(data is not None):
+                    data = data
+                    exclusive = True
+                    test_data = None
+                    for proc_2 in processors:
+                        if(proc.id.value != proc_2.id.value):
+                            test_data = proc_2.read_cache(addr)
+                            if(test_data is not None):
+                                exclusive = False
+                    if(exclusive):
+                        proc.set_state(addr, "O")
+                    break
+        return data
+
+    def write_data(self, processors, addr, data):
+        for proc in processors:
+            if(proc.read_cache(addr) is not None):
+                proc.write_cache(addr, data)
+            else:
+                lines = proc.get_lines()
+                for line in lines:
+                    if(line.tag is not None):
+                        exclusive = True
+                        for proc_2 in processors:
+                            if(proc.id.value != proc_2.id.value):
+                                test_data = proc_2.read_cache(line.tag)
+                                if(test_data is not None):
+                                    exclusive = False
+                        if(exclusive):
+                            proc_2.set_state(line.tag, "E")
+
+    def inst_run(self, clk, bus, msg, data_found, processors):
         inst_to_run = self.inst[-1]
         self.set_inst(self.inst[-1])
         inst_type = inst_to_run.type
@@ -174,11 +160,9 @@ class Processor:
                 self.inst.pop()
             else:
                 bus.set_inst(inst_to_run)
-                self.insert_msg(msg, inst_to_run, None, None)
-                data = self.wait_ans(msg)
-                data_found.value = False
-                if(data["ans"] is not None):
-                    data = data["ans"]
+                data = self.search_data(processors, inst_to_run.addr)
+                if(data is not None):
+                    data = data.data
                     print(f"CYCLE {start_clk}, PROC: {self.id.value}, READ CACHE:", inst_to_run.addr, data)
                     self.write_cache(inst_to_run.addr, data)
                     self.set_state(inst_to_run.addr, "S")
@@ -194,28 +178,22 @@ class Processor:
             bus.set_busy(False)
         elif(inst_type=="WRITE" and not bus.get_busy()):
             bus.set_inst(inst_to_run)
-            #bus.write_mem(inst_to_run.addr, inst_to_run.data)
             data = self.read_cache(inst_to_run.addr)
             print(f"CYCLE {start_clk}, PROC: {self.id.value}, WRITE", inst_to_run.addr, inst_to_run.data)
             while(clk.value-start_clk<=2):
                 pass
             if(data is not None):
-                self.insert_msg(msg, inst_to_run, None, None)
-                self.wait_write(msg)
+                self.write_data(processors, inst_to_run.addr, inst_to_run.data)
                 self.write_cache(inst_to_run.addr, inst_to_run.data)
             else:
-                read_inst = instruction.Instruction(self.id.value, "READ", [inst_to_run.addr])
-                self.insert_msg(msg, read_inst, None, None)
-                data = self.wait_ans(msg)
-                data_found.value = False
-                if(data["ans"] is not None):
+                data = self.search_data(processors, inst_to_run.addr)
+                if(data is not None):
                     self.write_cache(inst_to_run.addr, inst_to_run.data)
+                    self.write_data(processors, inst_to_run.addr, inst_to_run.data)
                     self.set_state(inst_to_run.addr, "S")
                 else:
                     self.write_cache(inst_to_run.addr, inst_to_run.data)                    
                     self.set_state(inst_to_run.addr, "E")
-                self.insert_msg(msg, inst_to_run, None, None)
-                self.wait_write(msg)
             bus.write_mem(inst_to_run.addr, inst_to_run.data)
             self.inst.pop()
             bus.set_inst(None)
@@ -224,74 +202,15 @@ class Processor:
             print(f"CYCLE {clk.value}, PROC: {self.id.value}, CALC")
             self.inst.pop()
 
-    def cpu_run(self, clk, bus, msg, kill, data_found):
+    def cpu_run(self, clk, bus, msg, kill, data_found, processors):
         clk_bef = 0 
         while(not kill.value):
             new_clk = clk.value
             if(clk_bef != new_clk):
-                """
-                try:
-                    x_lines = self.get_lines()
-                    print(f"\nCYCLE {new_clk}, PROC: {self.id.value}, STATE: {x_lines[0].state} {x_lines[1].state} \nDATA: {x_lines[0].tag}-{x_lines[0].data} {x_lines[1].tag}-{x_lines[1].data}\n")
-                    pass
-                except:
-                    print(f"CYCLE {new_clk}, PROC: {self.id.value}, STATE: None")
-                    pass
-                """
                 if(len(self.inst)==0):
                     self.new_inst()
                     #self.print_inst()
                 else:
-                    self.inst_run(clk, bus, msg, data_found)
+                    self.inst_run(clk, bus, msg, data_found, processors)
 
             clk_bef = new_clk
-
-    def snoopy(self, clk, bus, msg, processors, kill, data_found):
-        clk_bef = 0 
-        while(not kill.value):
-            new_clk = clk.value
-            if(clk_bef != new_clk):
-                new_msg = self.get_msg(msg)
-                inst = new_msg["req"]
-                if(inst.proc_id != self.id.value):
-                    if(new_msg["req"].type=="READ"):
-                        line = self.read_cache(inst.addr)
-                        if(line is None):
-                            self.insert_msg(msg, inst, self.id.value, False)
-                        elif(line.state=="E" or line.state=="O"):
-                            self.set_state(line.tag, "O")
-                            self.insert_msg(msg, inst, line.data, True)
-                        else:
-                            """
-                            exclusive = True
-                            for proc in processors:
-                                if(self.id.value != proc.id.value):
-                                    data = proc.read_cache(line.tag)
-                                    if(data is not None):
-                                        exclusive = False
-                            if(exclusive):
-                                self.set_state(line.tag, "O")
-                            """
-                            if(not data_found.value):
-                                data_found.value == True
-                                self.set_state(line.tag, "O")
-                            self.insert_msg(msg, inst, line.data, True)
-                    elif(new_msg["req"].type=="WRITE"):
-                        self.insert_msg(msg, inst, self.id.value, True)
-                        if(self.read_cache(inst.addr) is not None):
-                            self.write_cache(inst.addr, inst.data)
-                        else:
-                            lines = self.get_lines()
-                            for line in lines:
-                                if(line.tag is not None):
-                                    exclusive = True
-                                    for proc in processors:
-                                        if(self.id.value != proc.id.value):
-                                            data = proc.read_cache(line.tag)
-                                            if(data is not None):
-                                                exclusive = False
-                                    if(exclusive):
-                                        self.set_state(line.tag, "E")
-
-            clk_bef = new_clk
-            

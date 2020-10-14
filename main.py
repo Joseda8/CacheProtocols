@@ -69,7 +69,6 @@ def reader(clk, bus, processors, kill):
         #Update bus
         bus_inst = bus.get_inst()
         if(bus_inst is not None):
-            #print(f"BUS: PROC {bus_inst.proc_id} INST: {bus_inst.type}")
             tags["bus_inst"].configure(text=f"PROC: {bus_inst.proc_id}, {bus_inst}")
 
         #Update mem
@@ -83,11 +82,9 @@ def reader(clk, bus, processors, kill):
         for proc in processors:
             proc_inst = proc.get_inst_exe()
             if(proc_inst is not None):
-                #print(f"PROCESSOR {proc.id.value}, INST: {proc_inst.type}")
                 tags[str(proc.id.value)+"inst"].configure(text=proc_inst)
             lines = proc.get_lines()
             for line in lines:
-                #print(f"LINE {line.id}\nTAG: {line.tag}\nDATA: {line.data}\nSTATE: {line.state}")
                 tag = tags[line.name]
                 tag[0].configure(text=line.state)
                 if(line.tag is not None):
@@ -142,15 +139,11 @@ if __name__ == '__main__':
     #processors = [Processor(1), Processor(2)]
 
     threads = [threading.Thread(target=start_clk, args=(clk, kill)), threading.Thread(target=reader, args=(clk, bus, processors, kill))]
-    #threads = [threading.Thread(target=start_clk, args=(clk, kill))]
 
     for proc in processors:
-        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, msg, kill, data_found)))
-        threads.append(threading.Thread(target=proc.snoopy, args=(clk, bus, msg, processors, kill, data_found)))
+        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, msg, kill, data_found, processors)))
     
     [t.start() for t in threads]
-    #threads.append(msg)
-    #[t.join() for t in threads]
     
     window.mainloop()
 
