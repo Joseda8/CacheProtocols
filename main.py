@@ -24,6 +24,8 @@ mode = None
 steps = None
 time_to_sleep = 2.5
 
+data_found = multiprocessing.Value('i', False)
+
 #Funciones
 def start_clk(clk, kill):
     global mode
@@ -115,18 +117,18 @@ if __name__ == '__main__':
     tags = util.create_gui()
 
     mode_option = ttk.Combobox(width=15)
-    mode_option.place(x=100, y=560)
+    mode_option.place(x=150, y=560)
     mode_option["values"] = ["Ciclos", "Siguiente", "Continua"]
 
     steps_option = ttk.Combobox(width=2)
-    steps_option.place(x=210, y=560)
+    steps_option.place(x=260, y=560)
     steps_option["values"] = [1, 2, 3, 4, 5]
 
     pause_btn = Button(window, text="Start", command= pause_clk, background='white', fg='blue')
-    pause_btn.place(x=280, y=560)
+    pause_btn.place(x=320, y=560)
 
     exit_btn = Button(window, text="Exit", command= exit, background='white', fg='blue')
-    exit_btn.place(x=1150, y=560)
+    exit_btn.place(x=1100, y=560)
 
     #Instancias de los componentes
     BaseManager.register('Bus', Bus)
@@ -143,8 +145,8 @@ if __name__ == '__main__':
     #threads = [threading.Thread(target=start_clk, args=(clk, kill))]
 
     for proc in processors:
-        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, msg, kill)))
-        threads.append(threading.Thread(target=proc.snoopy, args=(clk, bus, msg, processors, kill)))
+        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, msg, kill, data_found)))
+        threads.append(threading.Thread(target=proc.snoopy, args=(clk, bus, msg, processors, kill, data_found)))
     
     [t.start() for t in threads]
     #threads.append(msg)

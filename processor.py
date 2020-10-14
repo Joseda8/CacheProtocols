@@ -162,7 +162,7 @@ class Processor:
 
         self.inst = new_inst
 
-    def inst_run(self, clk, bus, msg):
+    def inst_run(self, clk, bus, msg, data_found):
         inst_to_run = self.inst[-1]
         self.set_inst(self.inst[-1])
         inst_type = inst_to_run.type
@@ -176,6 +176,7 @@ class Processor:
                 bus.set_inst(inst_to_run)
                 self.insert_msg(msg, inst_to_run, None, None)
                 data = self.wait_ans(msg)
+                data_found.value = False
                 if(data["ans"] is not None):
                     data = data["ans"]
                     print(f"CYCLE {start_clk}, PROC: {self.id.value}, READ CACHE:", inst_to_run.addr, data)
@@ -206,6 +207,7 @@ class Processor:
                 read_inst = instruction.Instruction(self.id.value, "READ", [inst_to_run.addr])
                 self.insert_msg(msg, read_inst, None, None)
                 data = self.wait_ans(msg)
+                data_found.value = False
                 if(data["ans"] is not None):
                     self.write_cache(inst_to_run.addr, inst_to_run.data)
                     self.set_state(inst_to_run.addr, "S")
@@ -222,7 +224,7 @@ class Processor:
             print(f"CYCLE {clk.value}, PROC: {self.id.value}, CALC")
             self.inst.pop()
 
-    def cpu_run(self, clk, bus, msg, kill):
+    def cpu_run(self, clk, bus, msg, kill, data_found):
         clk_bef = 0 
         while(not kill.value):
             new_clk = clk.value
@@ -240,11 +242,11 @@ class Processor:
                     self.new_inst()
                     #self.print_inst()
                 else:
-                    self.inst_run(clk, bus, msg)
+                    self.inst_run(clk, bus, msg, data_found)
 
             clk_bef = new_clk
 
-    def snoopy(self, clk, bus, msg, processors, kill):
+    def snoopy(self, clk, bus, msg, processors, kill, data_found):
         clk_bef = 0 
         while(not kill.value):
             new_clk = clk.value
@@ -260,6 +262,7 @@ class Processor:
                             self.set_state(line.tag, "O")
                             self.insert_msg(msg, inst, line.data, True)
                         else:
+                            """
                             exclusive = True
                             for proc in processors:
                                 if(self.id.value != proc.id.value):
@@ -267,6 +270,10 @@ class Processor:
                                     if(data is not None):
                                         exclusive = False
                             if(exclusive):
+                                self.set_state(line.tag, "O")
+                            """
+                            if(not data_found.value):
+                                data_found.value == True
                                 self.set_state(line.tag, "O")
                             self.insert_msg(msg, inst, line.data, True)
                     elif(new_msg["req"].type=="WRITE"):
