@@ -9,6 +9,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from ctypes import c_char_p
 
+import instruction
 import util
 import time
 import threading
@@ -91,7 +92,27 @@ def reader(clk, bus, processors, kill):
                     tag[1].configure(text=bin(line.tag)[2:])
                 tag[2].configure(text=hex(line.data))
     return
-                                        
+
+
+def set_instructions():
+    line = open("instruction.txt", "r").readline()
+    proc = int(line[0])
+    inst_type = line[1]
+    addr = int(line[2:4])
+    data = int(line[4:6])
+
+    info = None
+
+    if(inst_type=="R"):
+        inst_type = "READ"
+        info = [addr]
+    elif(inst_type=="W"):
+        inst_type="WRITE"
+        info = [addr, data]
+    else:
+        inst_type="CALC"
+
+    processors[proc-1].add_inst(instruction.Instruction(proc, inst_type, info))
 
 def exit():
     kill.value = True
@@ -123,6 +144,9 @@ if __name__ == '__main__':
 
     pause_btn = Button(window, text="Start", command= pause_clk, background='white', fg='blue')
     pause_btn.place(x=320, y=560)
+
+    add_btn = Button(window, text="Add Instruction", command= set_instructions, background='white', fg='blue')
+    add_btn.place(x=380, y=560)
 
     exit_btn = Button(window, text="Exit", command= exit, background='white', fg='blue')
     exit_btn.place(x=1100, y=560)

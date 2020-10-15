@@ -26,6 +26,10 @@ class Processor:
                 self.is_inst_busy.value = False
                 return data
 
+    def add_inst(self, inst):
+        print("New instruction: ", inst)
+        self.inst[-2] = inst
+
     def set_inst(self, inst):    
         while(True):
             if(not self.is_inst_busy.value):
@@ -112,6 +116,7 @@ class Processor:
 
         self.inst = new_inst
 
+
     def search_data(self, processors, addr):
         data = None
         for proc in processors:
@@ -132,17 +137,26 @@ class Processor:
         return data
 
 
-    def search_shared_data(self, processors, proc_id, addr):
-        result = []
+    def search_owner(self, processors, addr):
+        lines = []
+        states = []
+        procs = []
         for proc in processors:
-            if(proc.id.value != self.id.value != proc_id):
-                data = proc.read_cache(addr)
-                if(data is not None):
-                    result.append(proc.id.value)
+            data = proc.read_cache(addr)
+            if(data is not None):
+                procs.append(proc.id.value)
+                lines.append(data)
+        
+        if(len(procs)==1):
+            processors[procs[0]-1].set_state(addr, "E")
+        else:
+            for line in lines:
+                states.append(line.state)
 
-        if(len(result)==1):
-            processors[result[0]].set_state(addr, "O")
-        return len(result)
+            if(not ("O" in states or "E" in states)):
+                processors[util.get_randint(0, len(states))].set_state(lines[0].tag, "O")
+
+        return lines
 
     def write_data(self, processors, addr, data):
         for proc in processors:
@@ -153,15 +167,8 @@ class Processor:
                     lines = proc.get_lines()
                     for line in lines:
                         if(line.tag is not None):
-                            exclusive = True
-                            for proc_2 in processors:
-                                if(proc_2.id.value != proc.id.value):
-                                    test_data = proc_2.read_cache(line.tag)
-                                    if(test_data is not None):
-                                        exclusive = False
-                                        
-                            if(exclusive):
-                                proc.set_state(line.tag, "E")
+                            self.search_owner(processors, line.tag)
+                            
 
     def inst_run(self, clk, bus, msg, data_found, processors):
         inst_to_run = self.inst[-1]
