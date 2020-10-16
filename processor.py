@@ -91,9 +91,9 @@ class Processor:
         new_inst = []
         if(self.id.value==1):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
-            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [0, 8]))
-            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [2, 8]))
-            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [4, 8]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [0, 1]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [2, 3]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [4, 5]))
             new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
         elif(self.id.value==2):
@@ -109,8 +109,8 @@ class Processor:
         elif(self.id.value==4):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
             new_inst.append(instruction.Instruction(self.id.value, "WRITE", [1, 8]))
-            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [2, 8]))
-            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [4, 8]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [2, 12]))
+            new_inst.append(instruction.Instruction(self.id.value, "WRITE", [4, 17]))
             new_inst.append(instruction.Instruction(self.id.value, "CALC", None))
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
 
