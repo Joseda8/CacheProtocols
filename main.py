@@ -2,7 +2,6 @@ from processor import Processor
 from bus import Bus
 from multiprocessing import Process, Manager
 from multiprocessing.managers import BaseManager
-from queue import Queue 
 from tkinter import *
 from tkinter import font
 from tkinter import ttk
@@ -157,15 +156,13 @@ if __name__ == '__main__':
     bus_manager.start()
     bus = bus_manager.Bus()
 
-    msg = Queue() 
-
     processors = [Processor(1), Processor(2), Processor(3), Processor(4)]
     #processors = [Processor(1), Processor(2)]
 
     threads = [threading.Thread(target=start_clk, args=(clk, kill)), threading.Thread(target=reader, args=(clk, bus, processors, kill))]
 
     for proc in processors:
-        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, msg, kill, data_found, processors)))
+        threads.append(threading.Thread(target=proc.cpu_run, args=(clk, bus, kill, processors)))
     
     [t.start() for t in threads]
     

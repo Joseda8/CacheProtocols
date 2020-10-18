@@ -6,11 +6,12 @@ from time import time
 
 
 def get_inst():
-    rand_prob = random.random()
-    rand_exp = random.randint(1, 10)
+    rand_prob = 0.5
+    rand_exp = 10
 
     X = ss.binom(rand_exp, rand_prob)
     #X = ss.poisson(rand_prob)
+    #X = ss.hypergeom(30, rand_exp, 12)
     x = np.arange(3)
 
     prob_ins = []

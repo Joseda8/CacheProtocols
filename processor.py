@@ -170,7 +170,7 @@ class Processor:
                             self.search_owner(processors, line.tag)
                             
 
-    def inst_run(self, clk, bus, msg, data_found, processors):
+    def inst_run(self, clk, bus, processors):
         inst_to_run = self.inst[-1]
         self.set_inst(self.inst[-1])
         inst_type = inst_to_run.type
@@ -225,7 +225,7 @@ class Processor:
             print(f"CYCLE {clk.value}, PROC: {self.id.value}, CALC")
             self.inst.pop()
 
-    def cpu_run(self, clk, bus, msg, kill, data_found, processors):
+    def cpu_run(self, clk, bus, kill, processors):
         clk_bef = 0 
         while(not kill.value):
             new_clk = clk.value
@@ -234,6 +234,6 @@ class Processor:
                     self.new_inst()
                     #self.print_inst()
                 else:
-                    self.inst_run(clk, bus, msg, data_found, processors)
+                    self.inst_run(clk, bus, processors)
 
             clk_bef = new_clk
