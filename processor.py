@@ -27,8 +27,11 @@ class Processor:
                 return data
 
     def add_inst(self, inst):
-        print("New instruction: ", inst)
-        self.inst[-2] = inst
+        try:
+            self.inst[-2] = inst
+        except:
+            self.inst.append(inst)
+        print(f"New instruction in {self.id.value}: {inst}")
 
     def set_inst(self, inst):    
         while(True):
