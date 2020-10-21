@@ -85,12 +85,13 @@ class Processor:
             if(inst == 0):
                 self.inst.append(instruction.Instruction(self.id.value, "CALC", None))
             elif(inst == 1):
-                addr = util.get_randint(0, 2)
+                addr = util.get_randint(0, 15)
                 self.inst.append(instruction.Instruction(self.id.value, "READ", [addr]))
             elif(inst == 2):
-                addr = util.get_randint(0, 2)
+                addr = util.get_randint(0, 15)
                 data = util.get_randint(0, 65535)
                 self.inst.append(instruction.Instruction(self.id.value, "WRITE", [addr, data]))
+        """
         new_inst = []
         if(self.id.value==1):
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
@@ -118,6 +119,7 @@ class Processor:
             new_inst.append(instruction.Instruction(self.id.value, "READ", [0]))
 
         self.inst = new_inst
+        """
 
 
     def search_data(self, processors, addr):
